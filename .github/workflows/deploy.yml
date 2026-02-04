@@ -28,7 +28,7 @@ jobs:
 
   deploy:
     needs: build-and-test
-    if: github.ref == 'refs/heads/main'  # Denna rad gör att vi BARA deployar när vi är på main
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -39,11 +39,9 @@ jobs:
         dotnet-version: '10.0.x'
 
     - name: Publish Application
-      # Vi bygger en release-version av API:et
       run: dotnet publish EncryptionApi/EncryptionApi.csproj -c Release -o ./publish
       
     - name: Generate Deployment Package
-      # Vi zippar ihop filerna så AWS kan ta emot dem
       run: |
         cd publish
         zip -r ../deploy_package.zip .

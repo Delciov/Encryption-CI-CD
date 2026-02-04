@@ -1,0 +1,60 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x' 
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --no-restore
+      
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+
+  deploy:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'  # Denna rad gör att vi BARA deployar när vi är på main
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Publish Application
+      # Vi bygger en release-version av API:et
+      run: dotnet publish EncryptionApi/EncryptionApi.csproj -c Release -o ./publish
+      
+    - name: Generate Deployment Package
+      # Vi zippar ihop filerna så AWS kan ta emot dem
+      run: |
+        cd publish
+        zip -r ../deploy_package.zip .
+        
+    - name: Deploy to Elastic Beanstalk
+      uses: einaregilsson/beanstalk-deploy@v21
+      with:
+        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        application_name: EncryptionApp
+        environment_name: ${{ secrets.AWS_EB_ENVIRONMENT_NAME }}
+        version_label: "ver-${{ github.sha }}"
+        region: ${{ secrets.AWS_REGION }}
+        deployment_package: deploy_package.zip

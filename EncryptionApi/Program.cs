@@ -1,26 +1,22 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// LÄGG TILL DENNA RAD (ADD THIS LINE)
-// Detta gör att .NET vet att vi använder Controllers
+// Add services to the container.
 builder.Services.AddControllers();
-
-// Lägg till Swagger om du vill ha det (bra för testning)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// --- HÄR ÄR FIXEN ---
+// Vi kör alltid Swagger, oavsett om det är Development eller Production
+app.UseSwagger();
+app.UseSwaggerUI();
+// --------------------
+
+app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
-// LÄGG TILL DENNA RAD (ADD THIS LINE)
-// Detta aktiverar routingen till din CipherController
 app.MapControllers();
 
 app.Run();
